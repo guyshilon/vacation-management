@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: Vacation Management API
+  version: 1.0.0
+  description: REST API for vacation requests (Requester / Validator).
+paths:
+  /health:
+    get:
+      x-handler: handlers/healthHandlers#getHealth
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+
+  /auth/login:
+    post:
+      x-handler: handlers/authHandlers#login
+      summary: Login and receive a JWT
+      responses:
+        "200":
+          description: Authenticated
+        "400":
+          description: Missing credentials
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      x-handler: handlers/authHandlers#me
+      summary: Current user from JWT
+      responses:
+        "200":
+          description: Current user
+        "401":
+          description: Unauthorized
+
+  /users:
+    get:
+      x-handler: handlers/userHandlers#listUsers
+      summary: List users (Validator only)
+      responses:
+        "200":
+          description: Users
+        "403":
+          description: Forbidden
+
+  /vacation-requests:
+    get:
+      x-handler: handlers/vacationHandlers#listVacationRequests
+      summary: List vacation requests (paginated)
+      responses:
+        "200":
+          description: Page of requests
+    post:
+      x-handler: handlers/vacationHandlers#createVacationRequest
+      summary: Submit a vacation request (Requester only)
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Validation error
+
+  /vacation-requests/team:
+    get:
+      x-handler: handlers/vacationHandlers#listTeamVacationRequests
+      summary: Team vacation planning (Pending and Approved)
+      responses:
+        "200":
+          description: Team requests
+
+  /vacation-requests/:id/approve:
+    post:
+      x-handler: handlers/vacationHandlers#approveVacationRequest
+      summary: Approve a request (Validator only)
+      responses:
+        "200":
+          description: Approved
+        "400":
+          description: Cannot modify
+
+  /vacation-requests/:id/reject:
+    post:
+      x-handler: handlers/vacationHandlers#rejectVacationRequest
+      summary: Reject a request (Validator only)
+      responses:
+        "200":
+          description: Rejected
+        "400":
+          description: Comment required
