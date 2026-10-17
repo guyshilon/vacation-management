@@ -39,13 +39,15 @@ async function onSubmit() {
     class="flex min-h-screen items-center justify-center bg-[var(--bg-canvas)] p-4"
   >
     <form
-      class="w-full max-w-md space-y-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-surface)] p-8"
+      class="login-card w-full max-w-md rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-surface)] p-8"
       @submit.prevent="onSubmit"
     >
-      <AppBrand />
-      <p class="text-sm text-[var(--text-secondary)]">
-        Sign in with a demo account.
-      </p>
+      <header class="login-head">
+        <AppBrand />
+        <p class="text-sm text-[var(--text-secondary)]">
+          Sign in with a demo account.
+        </p>
+      </header>
 
       <label class="block space-y-1 text-sm text-[var(--text-body)]">
         <span>Email</span>

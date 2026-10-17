@@ -483,22 +483,45 @@ html.dark input[type="date"] {
   background: var(--bg-nav-active);
 }
 
-.nav-brand-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
 .nav-brand-name {
   font-size: 1.15rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--page-title);
+  line-height: 1.2;
 }
 
-.nav-brand-tagline {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.login-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-bottom: 0.35rem;
+}
+
+.login-head .nav-brand {
+  gap: 0.85rem;
+}
+
+.login-head .nav-brand-mark {
+  height: 2.75rem;
+  width: 2.75rem;
+  border-radius: 0.85rem;
+}
+
+.login-head .nav-brand-mark svg {
+  width: 22px;
+  height: 22px;
+}
+
+.login-head .nav-brand-name {
+  font-size: 1.45rem;
+  font-weight: 700;
 }
 
 .sort-head {

@@ -30,9 +30,6 @@ defineProps<{
         <circle cx="12" cy="12" r="1.15" fill="var(--brand)" />
       </svg>
     </div>
-    <div class="nav-brand-copy">
-      <span class="nav-brand-name">VacationFactory</span>
-      <span v-if="!compact" class="nav-brand-tagline">Time off, simply</span>
-    </div>
+    <span class="nav-brand-name">VacationFactory</span>
   </div>
 </template>
