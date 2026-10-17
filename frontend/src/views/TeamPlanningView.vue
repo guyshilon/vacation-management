@@ -1,14 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { fetchTeamVacationRequests } from "../api/vacationRequests";
-import VacationRequestTable from "../components/VacationRequestTable.vue";
-import AppLayout from "../layouts/AppLayout.vue";
+// Vue
+import { computed, onMounted, ref } from "vue";
+
+// Types
 import type { VacationRequest } from "../types";
+
+// API
+import { fetchTeamVacationRequests } from "../api/vacationRequests";
+
+// Components
+import PageSearch from "../components/PageSearch.vue";
+import VacationRequestTable from "../components/VacationRequestTable.vue";
+
+// Layouts
+import AppLayout from "../layouts/AppLayout.vue";
+
+// Composables
+import { useDateSort } from "../composables/useDateSort";
+
+// Utils
 import { getApiErrorMessage } from "../utils/apiError";
+
+const { sortBy, sortDir, onSort, sorted } = useDateSort();
 
 const requests = ref<VacationRequest[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
+const search = ref("");
+
+const visibleRequests = computed(() => {
+  const term = search.value.trim().toLowerCase();
+  const rows = term
+    ? requests.value.filter((request) =>
+        [request.reason, request.status, request.user?.name]
+          .join(" ")
+          .toLowerCase()
+          .includes(term),
+      )
+    : requests.value;
+  return sorted(rows);
+});
 
 onMounted(async () => {
   loading.value = true;
@@ -17,7 +48,10 @@ onMounted(async () => {
     const { data } = await fetchTeamVacationRequests();
     requests.value = data.vacationRequests;
   } catch (error) {
-    errorMessage.value = getApiErrorMessage(error, "Could not load team vacations.");
+    errorMessage.value = getApiErrorMessage(
+      error,
+      "Could not load team vacations.",
+    );
   } finally {
     loading.value = false;
   }
@@ -26,16 +60,27 @@ onMounted(async () => {
 
 <template>
   <AppLayout>
-    <section class="rounded-xl bg-white p-6 shadow-sm">
-      <h1 class="text-xl font-semibold">Team vacation planning</h1>
-      <p class="mt-1 mb-4 text-sm text-slate-600">
-        Pending and approved time off for everyone, ordered by start date. Rejected
-        requests are hidden so you can plan around days people are actually out or waiting
-        for approval.
-      </p>
-      <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
-      <p v-else-if="loading" class="text-sm text-slate-500">Loading...</p>
-      <VacationRequestTable v-else :requests="requests" show-user />
-    </section>
+    <template #search>
+      <PageSearch v-model="search" />
+    </template>
+    <h1 class="page-title">Team planning</h1>
+    <p
+      v-if="errorMessage"
+      class="text-sm"
+      style="color: var(--status-rejected)"
+    >
+      {{ errorMessage }}
+    </p>
+    <p v-else-if="loading" class="text-sm text-[var(--text-secondary)]">
+      Loading...
+    </p>
+    <VacationRequestTable
+      v-else
+      :requests="visibleRequests"
+      show-user
+      :sort-by="sortBy"
+      :sort-dir="sortDir"
+      @sort="onSort"
+    />
   </AppLayout>
 </template>

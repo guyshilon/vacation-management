@@ -7,6 +7,7 @@ import "./generated/HandlerRegistry";
 import { createApp } from "./app";
 import { AppDataSource } from "./config/database";
 import { registerEventHandlers } from "./events/registerEventHandlers";
+import { seedSampleRequests } from "./seed/seedSampleRequests";
 import { seedUsers } from "./seed/seedUsers";
 
 const port = Number(process.env.PORT) || 3000;
@@ -18,6 +19,7 @@ async function start() {
 
     registerEventHandlers();
     await seedUsers();
+    await seedSampleRequests();
 
     const app = createApp();
     app.listen(port, () => {

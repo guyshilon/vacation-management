@@ -1,3 +1,4 @@
+// Vendor
 import axios from "axios";
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {

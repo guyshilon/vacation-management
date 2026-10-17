@@ -1,4 +1,7 @@
+// Types
 import type { PaginatedVacationRequests, VacationRequest } from "../types";
+
+// API
 import { api } from "./client";
 
 export function fetchMyVacationRequests() {
@@ -18,6 +21,8 @@ export function fetchVacationRequests(params: {
   limit?: number;
   status?: string;
   user_id?: string;
+  sort?: string;
+  order?: string;
 }) {
   return api.get<PaginatedVacationRequests>("/vacation-requests", { params });
 }

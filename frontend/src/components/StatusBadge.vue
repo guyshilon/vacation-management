@@ -1,19 +1,27 @@
 <script setup lang="ts">
+// Types
 import type { VacationRequestStatus } from "../types";
 
 defineProps<{
   status: VacationRequestStatus;
 }>();
 
-const classes: Record<VacationRequestStatus, string> = {
-  Pending: "bg-amber-100 text-amber-800",
-  Approved: "bg-emerald-100 text-emerald-800",
-  Rejected: "bg-red-100 text-red-800",
+const colors: Record<VacationRequestStatus, string> = {
+  Pending: "var(--status-pending)",
+  Approved: "var(--status-approved)",
+  Rejected: "var(--status-rejected)",
 };
 </script>
 
 <template>
-  <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="classes[status]">
+  <span
+    class="inline-flex items-center gap-1.5 text-sm font-medium"
+    :style="{ color: colors[status] }"
+  >
+    <span
+      class="h-1.5 w-1.5 rounded-full"
+      :style="{ background: colors[status] }"
+    />
     {{ status }}
   </span>
 </template>

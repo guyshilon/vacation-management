@@ -1,21 +1,52 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+// Vue
+import { computed, onMounted, ref } from "vue";
+
+// Types
+import type { VacationRequest } from "../types";
+
+// API
 import {
   createVacationRequest,
   fetchMyVacationRequests,
 } from "../api/vacationRequests";
+
+// Components
+import PageSearch from "../components/PageSearch.vue";
 import VacationRequestForm from "../components/VacationRequestForm.vue";
 import VacationRequestTable from "../components/VacationRequestTable.vue";
+
+// Layouts
 import AppLayout from "../layouts/AppLayout.vue";
-import type { VacationRequest } from "../types";
+
+// Composables
+import { useDateSort } from "../composables/useDateSort";
+
+// Utils
 import { getApiErrorMessage } from "../utils/apiError";
+
+const { sortBy, sortDir, onSort, sorted } = useDateSort();
 
 const requests = ref<VacationRequest[]>([]);
 const loadingList = ref(false);
 const submitting = ref(false);
 const listError = ref("");
 const formError = ref("");
-const formRef = ref<{ reset: () => void } | null>(null);
+const search = ref("");
+const showForm = ref(false);
+
+const visibleRequests = computed(() => {
+  const term = search.value.trim().toLowerCase();
+  const rows = term
+    ? requests.value.filter((request) =>
+        [request.reason, request.status, request.user?.name]
+          .join(" ")
+          .toLowerCase()
+          .includes(term)
+      )
+    : requests.value;
+  return sorted(rows);
+});
 
 async function loadRequests() {
   loadingList.value = true;
@@ -30,6 +61,11 @@ async function loadRequests() {
   }
 }
 
+function closeForm() {
+  showForm.value = false;
+  formError.value = "";
+}
+
 async function onCreate(payload: {
   start_date: string;
   end_date: string;
@@ -39,7 +75,7 @@ async function onCreate(payload: {
   formError.value = "";
   try {
     await createVacationRequest(payload);
-    formRef.value?.reset();
+    showForm.value = false;
     await loadRequests();
   } catch (error) {
     formError.value = getApiErrorMessage(error, "Could not submit the request.");
@@ -55,27 +91,33 @@ onMounted(() => {
 
 <template>
   <AppLayout>
-    <div class="space-y-8">
-      <section class="rounded-xl bg-white p-6 shadow-sm">
-        <h1 class="mb-1 text-xl font-semibold">New vacation request</h1>
-        <p class="mb-4 text-sm text-slate-600">
-          Start and end dates are required. The end date must be after the start date, and
-          dates cannot be in the past or overlap another request.
-        </p>
-        <VacationRequestForm
-          ref="formRef"
-          :loading="submitting"
-          :error-message="formError"
-          @submit="onCreate"
-        />
-      </section>
-
-      <section class="rounded-xl bg-white p-6 shadow-sm">
-        <h2 class="mb-4 text-lg font-semibold">My requests</h2>
-        <p v-if="listError" class="text-sm text-red-600">{{ listError }}</p>
-        <p v-else-if="loadingList" class="text-sm text-slate-500">Loading...</p>
-        <VacationRequestTable v-else :requests="requests" />
-      </section>
+    <template #search>
+      <PageSearch v-model="search" />
+    </template>
+    <h1 class="page-title">My requests</h1>
+    <div class="filter-row justify-end">
+      <button class="btn-primary rounded-full" type="button" @click="showForm = true">
+        + New request
+      </button>
     </div>
+
+    <VacationRequestForm
+      :open="showForm"
+      :loading="submitting"
+      :error-message="formError"
+      @close="closeForm"
+      @submit="onCreate"
+    />
+
+    <p v-if="listError" class="text-sm" style="color: var(--status-rejected)">{{ listError }}</p>
+    <p v-else-if="loadingList" class="text-sm text-[var(--text-secondary)]">Loading...</p>
+    <VacationRequestTable
+      v-else
+      :requests="visibleRequests"
+      show-user
+      :sort-by="sortBy"
+      :sort-dir="sortDir"
+      @sort="onSort"
+    />
   </AppLayout>
 </template>

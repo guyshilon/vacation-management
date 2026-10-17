@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { AppDataSource } from "../config/database";
 import { User } from "../entities/User";
 
-export const DEMO_USERS = [
+const DEMO_USERS = [
   {
     name: "Alice Requester",
     email: "requester@vacation.local",
@@ -14,6 +14,36 @@ export const DEMO_USERS = [
     email: "validator@vacation.local",
     password: "Password123",
     role: "Validator" as const,
+  },
+  {
+    name: "Maya Chen",
+    email: "maya@vacation.local",
+    password: "Password123",
+    role: "Requester" as const,
+  },
+  {
+    name: "Noah Patel",
+    email: "noah@vacation.local",
+    password: "Password123",
+    role: "Requester" as const,
+  },
+  {
+    name: "Sofia Rossi",
+    email: "sofia@vacation.local",
+    password: "Password123",
+    role: "Requester" as const,
+  },
+  {
+    name: "Liam Brooks",
+    email: "liam@vacation.local",
+    password: "Password123",
+    role: "Requester" as const,
+  },
+  {
+    name: "Emma Berg",
+    email: "emma@vacation.local",
+    password: "Password123",
+    role: "Requester" as const,
   },
 ];
 

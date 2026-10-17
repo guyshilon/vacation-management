@@ -1,26 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+// Vue
+import { computed, onMounted, ref, watch } from "vue";
+
+// Types
+import type { User, VacationRequest } from "../types";
+
+// API
 import { fetchUsers } from "../api/users";
 import {
   approveVacationRequest,
   fetchVacationRequests,
   rejectVacationRequest,
 } from "../api/vacationRequests";
+
+// Components
+import ActionsMenu from "../components/ActionsMenu.vue";
+import FilterSelect from "../components/FilterSelect.vue";
+import PageSearch from "../components/PageSearch.vue";
 import RejectCommentModal from "../components/RejectCommentModal.vue";
 import VacationRequestTable from "../components/VacationRequestTable.vue";
+
+// Layouts
 import AppLayout from "../layouts/AppLayout.vue";
-import type { User, VacationRequest } from "../types";
+
+// Composables
+import { useDateSort } from "../composables/useDateSort";
+
+// Utils
 import { getApiErrorMessage } from "../utils/apiError";
 
-const PAGE_SIZE = 5;
+const { sortBy, sortDir, onSort } = useDateSort();
+
+const PAGE_SIZE = 10;
 
 const requests = ref<VacationRequest[]>([]);
 const users = ref<User[]>([]);
 const page = ref(1);
 const totalPages = ref(1);
-const total = ref(0);
 const statusFilter = ref("");
 const userFilter = ref("");
+const search = ref("");
 const loading = ref(false);
 const listError = ref("");
 const actionError = ref("");
@@ -28,6 +47,48 @@ const actingId = ref<string | null>(null);
 const rejectTarget = ref<VacationRequest | null>(null);
 const rejectLoading = ref(false);
 const rejectError = ref("");
+
+const statusOptions = [
+  { value: "", label: "Status" },
+  { value: "Pending", label: "Pending" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+];
+
+const employeeOptions = computed(() => [
+  { value: "", label: "Employee" },
+  ...users.value.map((person) => ({ value: person.id, label: person.name })),
+]);
+
+const pageItems = computed(() => {
+  const last = Math.max(1, totalPages.value);
+  const current = page.value;
+  const wanted = [1, last, current - 1, current, current + 1].filter(
+    (n) => n >= 1 && n <= last,
+  );
+  const unique = [...new Set(wanted)].sort((a, b) => a - b);
+  const items: Array<number | "ellipsis"> = [];
+  unique.forEach((n, index) => {
+    if (index > 0 && n - unique[index - 1] > 1) {
+      items.push("ellipsis");
+    }
+    items.push(n);
+  });
+  return items;
+});
+
+const visibleRequests = computed(() => {
+  const term = search.value.trim().toLowerCase();
+  if (!term) {
+    return requests.value;
+  }
+  return requests.value.filter((request) =>
+    [request.reason, request.status, request.user?.name, request.user?.email]
+      .join(" ")
+      .toLowerCase()
+      .includes(term),
+  );
+});
 
 async function loadRequests() {
   loading.value = true;
@@ -38,10 +99,11 @@ async function loadRequests() {
       limit: PAGE_SIZE,
       status: statusFilter.value || undefined,
       user_id: userFilter.value || undefined,
+      sort: sortBy.value || undefined,
+      order: sortBy.value ? sortDir.value : undefined,
     });
     requests.value = data.vacationRequests;
     totalPages.value = data.pagination.totalPages;
-    total.value = data.pagination.total;
   } catch (error) {
     listError.value = getApiErrorMessage(error, "Could not load requests.");
   } finally {
@@ -54,7 +116,7 @@ async function loadUsers() {
   users.value = data.users;
 }
 
-watch([statusFilter, userFilter], () => {
+watch([statusFilter, userFilter, sortBy, sortDir], () => {
   page.value = 1;
   void loadRequests();
 });
@@ -66,7 +128,10 @@ async function onApprove(request: VacationRequest) {
     await approveVacationRequest(request.id);
     await loadRequests();
   } catch (error) {
-    actionError.value = getApiErrorMessage(error, "Could not approve this request.");
+    actionError.value = getApiErrorMessage(
+      error,
+      "Could not approve this request.",
+    );
   } finally {
     actingId.value = null;
   }
@@ -88,7 +153,10 @@ async function onReject(comments: string) {
     rejectTarget.value = null;
     await loadRequests();
   } catch (error) {
-    rejectError.value = getApiErrorMessage(error, "Could not reject this request.");
+    rejectError.value = getApiErrorMessage(
+      error,
+      "Could not reject this request.",
+    );
   } finally {
     rejectLoading.value = false;
   }
@@ -108,104 +176,175 @@ function nextPage() {
   }
 }
 
+function goToPage(next: number) {
+  if (
+    next === page.value ||
+    next < 1 ||
+    next > totalPages.value ||
+    loading.value
+  ) {
+    return;
+  }
+  page.value = next;
+  void loadRequests();
+}
+
 onMounted(async () => {
-  await loadUsers();
+  try {
+    await loadUsers();
+  } catch {
+    users.value = [];
+  }
   await loadRequests();
 });
 </script>
 
 <template>
   <AppLayout>
-    <div class="space-y-6">
-      <section class="rounded-xl bg-white p-6 shadow-sm">
-        <h1 class="text-xl font-semibold">All vacation requests</h1>
-        <p class="mt-1 text-sm text-slate-600">
-          Filter by status or employee. Pending requests can be approved or rejected.
-        </p>
+    <template #search>
+      <PageSearch v-model="search" />
+    </template>
+    <h1 class="page-title">Review requests</h1>
+    <div class="filter-row">
+      <FilterSelect
+        v-model="statusFilter"
+        placeholder="Status"
+        :options="statusOptions"
+      >
+        <template #icon>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <rect x="4" y="5" width="16" height="16" rx="2" />
+            <path d="M8 3v4M16 3v4M4 11h16" />
+          </svg>
+        </template>
+      </FilterSelect>
+      <FilterSelect
+        v-model="userFilter"
+        placeholder="Employee"
+        :options="employeeOptions"
+      >
+        <template #icon>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+            <circle cx="9.5" cy="7" r="3.5" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </template>
+      </FilterSelect>
+    </div>
 
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
-          <label class="block space-y-1 text-sm">
-            <span>Status</span>
-            <select
-              v-model="statusFilter"
-              class="w-full rounded border border-slate-300 px-3 py-2"
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </label>
-          <label class="block space-y-1 text-sm">
-            <span>Employee</span>
-            <select
-              v-model="userFilter"
-              class="w-full rounded border border-slate-300 px-3 py-2"
-            >
-              <option value="">All</option>
-              <option v-for="person in users" :key="person.id" :value="person.id">
-                {{ person.name }}
-              </option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section class="rounded-xl bg-white p-6 shadow-sm">
-        <p v-if="listError" class="text-sm text-red-600">{{ listError }}</p>
-        <p v-else-if="actionError" class="mb-3 text-sm text-red-600">{{ actionError }}</p>
-        <p v-else-if="loading" class="text-sm text-slate-500">Loading...</p>
+    <p v-if="listError" class="text-sm" style="color: var(--status-rejected)">
+      {{ listError }}
+    </p>
+    <p
+      v-if="actionError"
+      class="mb-3 text-sm"
+      style="color: var(--status-rejected)"
+    >
+      {{ actionError }}
+    </p>
+    <p
+      v-if="loading && requests.length === 0"
+      class="text-sm text-[var(--text-secondary)]"
+    >
+      Loading...
+    </p>
+    <div v-else class="table-stage">
+      <Transition name="page-fade" mode="out-in">
         <VacationRequestTable
-          v-else
-          :requests="requests"
+          :key="page"
+          :requests="visibleRequests"
+          paged
           show-user
           show-actions
+          :sort-by="sortBy"
+          :sort-dir="sortDir"
+          @sort="onSort"
         >
           <template #actions="{ request }">
-            <div v-if="request.status === 'Pending'" class="flex gap-2">
-              <button
-                type="button"
-                class="rounded bg-emerald-700 px-2 py-1 text-xs text-white disabled:opacity-50"
-                :disabled="actingId === request.id"
-                @click="onApprove(request)"
-              >
-                Approve
-              </button>
-              <button
-                type="button"
-                class="rounded bg-red-600 px-2 py-1 text-xs text-white"
-                @click="openReject(request)"
-              >
-                Reject
-              </button>
-            </div>
-            <span v-else class="text-xs text-slate-400">—</span>
+            <ActionsMenu
+              :request="request"
+              :acting="actingId === request.id"
+              @approve="onApprove(request)"
+              @reject="openReject(request)"
+            />
           </template>
         </VacationRequestTable>
+      </Transition>
+    </div>
 
-        <div class="mt-4 flex items-center justify-between text-sm text-slate-600">
-          <span>{{ total }} request(s)</span>
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="rounded border px-2 py-1 disabled:opacity-40"
-              :disabled="page <= 1 || loading"
-              @click="previousPage"
-            >
-              Previous
-            </button>
-            <span>Page {{ page }} of {{ totalPages }}</span>
-            <button
-              type="button"
-              class="rounded border px-2 py-1 disabled:opacity-40"
-              :disabled="page >= totalPages || loading"
-              @click="nextPage"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </section>
+    <div class="pager">
+      <div class="pager-status">
+        Showing
+        <span class="pager-current">{{ page }}</span>
+        Out of {{ Math.max(totalPages, 1) }}
+      </div>
+      <div class="pager-controls">
+        <button
+          class="pager-btn"
+          type="button"
+          :disabled="page <= 1 || loading"
+          @click="previousPage"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Previous
+        </button>
+        <template v-for="(item, index) in pageItems" :key="`${item}-${index}`">
+          <span v-if="item === 'ellipsis'" class="pager-ellipsis">…</span>
+          <button
+            v-else
+            class="pager-page"
+            :class="{ current: item === page }"
+            type="button"
+            :disabled="loading"
+            @click="goToPage(item)"
+          >
+            {{ item }}
+          </button>
+        </template>
+        <button
+          class="pager-btn"
+          type="button"
+          :disabled="page >= totalPages || loading"
+          @click="nextPage"
+        >
+          Next
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <RejectCommentModal

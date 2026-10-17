@@ -1,6 +1,24 @@
+// Vue
 import { computed, ref } from "vue";
-import { loginRequest } from "../api/auth";
+
+// Types
 import type { User, UserRole } from "../types";
+
+// API
+import { loginRequest } from "../api/auth";
+
+function isTokenExpired(token: string | null): boolean {
+  if (!token) {
+    return true;
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload.exp === "number" && payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
 
 const user = ref<User | null>(readUser());
 const token = ref<string | null>(localStorage.getItem("token"));
@@ -22,7 +40,9 @@ export function homePathForRole(role: UserRole): string {
 }
 
 export function useAuth() {
-  const isLoggedIn = computed(() => Boolean(token.value && user.value));
+  const isLoggedIn = computed(
+    () => Boolean(token.value && user.value) && !isTokenExpired(token.value)
+  );
 
   async function login(email: string, password: string) {
     const { data } = await loginRequest(email, password);

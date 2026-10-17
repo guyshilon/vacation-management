@@ -10,12 +10,16 @@ import { toPublicVacationRequest } from "../utils/vacationRequestPublic";
 
 const STATUSES: VacationRequestStatus[] = ["Pending", "Approved", "Rejected"];
 
+const SORT_FIELDS = ["start_date", "end_date", "created_at"] as const;
+
 export async function listVacationRequests(options: {
   authUser: AuthUser;
   page: number;
   limit: number;
   status?: string;
   userId?: string;
+  sort?: string;
+  order?: string;
 }) {
   const page = Math.max(1, options.page || 1);
   const limit = Math.min(50, Math.max(1, options.limit || 10));
@@ -36,12 +40,18 @@ export async function listVacationRequests(options: {
     where.status = options.status as VacationRequestStatus;
   }
 
+  const sortField = SORT_FIELDS.includes(options.sort as (typeof SORT_FIELDS)[number])
+    ? options.sort
+    : "created_at";
+  const sortOrder = options.order === "ASC" ? "ASC" : "DESC";
+  const defaultOrder = sortField === "created_at" && options.order !== "ASC" ? "DESC" : sortOrder;
+
   const [vacationRequests, total] = await AppDataSource.getRepository(
     VacationRequest
   ).findAndCount({
     where,
     relations: { user: true },
-    order: { created_at: "DESC" },
+    order: { [sortField as string]: defaultOrder },
     skip: (page - 1) * limit,
     take: limit,
   });

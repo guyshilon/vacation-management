@@ -51,6 +51,8 @@ export const listVacationRequests: HandlerFn = wrapHandler(
       limit: Number(query.limit) || 10,
       status: query.status,
       userId: query.user_id,
+      sort: query.sort,
+      order: query.order,
     });
   }
 );

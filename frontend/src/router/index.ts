@@ -1,10 +1,17 @@
+// Vue
 import { createRouter, createWebHistory } from "vue-router";
-import { homePathForRole, useAuth } from "../composables/useAuth";
+
+// Types
 import type { UserRole } from "../types";
+
+// Views
 import LoginView from "../views/LoginView.vue";
 import RequesterView from "../views/RequesterView.vue";
 import TeamPlanningView from "../views/TeamPlanningView.vue";
 import ValidatorView from "../views/ValidatorView.vue";
+
+// Composables
+import { homePathForRole, useAuth } from "../composables/useAuth";
 
 const router = createRouter({
   history: createWebHistory(),

@@ -1,3 +1,4 @@
+// Types
 import type { UserRole } from "../types";
 
 declare module "vue-router" {
