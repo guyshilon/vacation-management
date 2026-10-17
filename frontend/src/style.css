@@ -579,6 +579,42 @@ html.dark input[type="date"] {
   background: var(--bg-muted);
 }
 
+.theme-switch {
+  position: relative;
+  display: inline-flex;
+  width: 2.6rem;
+  height: 1.56rem;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #e6e6e6;
+  transition: background 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-switch.on {
+  background: #2c2c2c;
+}
+
+.theme-switch-knob {
+  position: absolute;
+  top: 0.16rem;
+  left: 0.16rem;
+  width: 1.24rem;
+  height: 1.24rem;
+  border-radius: 999px;
+  background: #111111;
+  will-change: left;
+  transition:
+    left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-switch.on .theme-switch-knob {
+  left: calc(100% - 1.4rem);
+  background: #ffffff;
+}
+
 .menu-toggle,
 .sidebar-backdrop {
   display: none;

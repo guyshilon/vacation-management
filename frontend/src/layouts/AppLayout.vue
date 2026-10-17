@@ -159,10 +159,10 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
           <div class="min-w-0 flex-1">
             <slot name="search" />
           </div>
-          <div class="flex shrink-0 items-center gap-0.5">
+          <div class="flex shrink-0 items-center gap-4">
             <ThemeToggle />
             <div
-              class="ml-0.5 flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
+              class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
               style="background: var(--avatar)"
             >
               {{ avatar }}
